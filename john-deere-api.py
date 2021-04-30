@@ -3,19 +3,24 @@ import datetime
 import json
 import uuid
 import logging
+import config
 
 from flask import Flask, render_template, request, redirect
 import requests
 import urllib.parse
 
 app = Flask(__name__)
+app.config.from_pyfile('config.py')
+app.config.from_pyfile('./instance/config.py')
 
-SERVER_URL='http://localhost:9090'
+SERVER_HOST=app.config.get('SERVER_HOST', 'localhost')
+SERVER_PORT=app.config.get('SERVER_PORT', 9090)
+SERVER_URL=f'http://{SERVER_HOST}:{SERVER_PORT}'
 
 settings = {
     'apiUrl': 'https://sandboxapi.deere.com/platform',
-    'clientId': '',
-    'clientSecret': '',
+    'clientId': app.config.get('CLIENT_ID', ''),
+    'clientSecret': app.config.get('CLIENT_SECRET', ''),
     'wellKnown': 'https://signin.johndeere.com/oauth2/aus78tnlaysMraFhC1t7/.well-known/oauth-authorization-server',
     'callbackUrl': f"{SERVER_URL}/callback",
     'orgConnectionCompletedUrl': SERVER_URL,
@@ -97,6 +102,7 @@ def needs_organization_access():
     in the link.
     """
     api_response = api_get(settings['accessToken'], settings['apiUrl']+'/organizations').json()
+    print(json.dumps(api_response, indent=True))
     for org in api_response['values']:
         for link in org['links']:
             if link['rel'] == 'connections':
@@ -177,4 +183,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=9090)
+    app.run(host='0.0.0.0', port=SERVER_PORT)
